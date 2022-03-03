@@ -31,6 +31,10 @@ class MyBattlesnakeHeuristics(Heuristics):
         '''
         Heuristics to stop the snakes from hitting a wall.
         '''
+        
+        #currently bad because it only sees 1 block radius around it
+        
+        
         your_snake_body = json["you"]["body"]
         i, j = your_snake_body[0]["y"], your_snake_body[0]["x"]
         
@@ -42,7 +46,7 @@ class MyBattlesnakeHeuristics(Heuristics):
         left = state[i, j-1, 1] != -1
         right = state[i, j+1, 1] != -1
         
-        action = [down, up, left, right]
+        action = [up, down, left, right]
 
         return action
     
@@ -51,6 +55,10 @@ class MyBattlesnakeHeuristics(Heuristics):
         '''
         Heuristics to stop the snakes from forbidden moves.
         '''
+        
+        #currently bad because it only checks its neck
+        
+        
         your_snake_body = json["you"]["body"]
         i, j = your_snake_body[0]["y"], your_snake_body[0]["x"]
         if len(your_snake_body) == 1:
@@ -67,13 +75,17 @@ class MyBattlesnakeHeuristics(Heuristics):
         left = not (i == next_i and j-1 == next_j)
         right = not (i == next_i and j+1 == next_j)
       
-        return [down, up, left, right]
+        return [up, down, left, right]
     
     @Heuristics.positive_heuristics
     def go_to_food_if_close(self, state, snake_id, turn_count, health, json):
         '''
         Example heuristic to move towards food if it's close to you.
         '''
+        
+        #currently bad because it only sees 1 block radius
+        
+        
         if health[snake_id] > 30:
             return [True, True, True, True]  
         
@@ -90,9 +102,9 @@ class MyBattlesnakeHeuristics(Heuristics):
         
         food_direction = None
         if food[i+1, j] == 1:
-            return [False, True, False, False]
-        if food[i-1, j] == 1:
             return [True, False, False, False]
+        if food[i-1, j] == 1:
+            return [False, True, False, False]
         if food[i, j-1] == 1:
             return [False, False, True, False]
         if food[i, j+1] == 1:
@@ -125,29 +137,38 @@ class MyBattlesnakeHeuristics(Heuristics):
         `action`: np.array of size 4
         The qvalues of the actions calculated. The 4 values correspond to [up, down, left, right]
         '''
+        
         log_string = ""
-        # The default `best_action` to take is the one that provides has the largest Q value.
-        # If you think of something else, you can edit how `best_action` is calculated
-        best_action = int(np.argmax(action))
+        
+        print("snake " + str(snake_id))
+        print("turn " + str(turn_count))
+        print(action)
+       
         
         wall_masks = self.banned_wall_hits(state, snake_id, turn_count, health, json)
-        if best_action not in np.where(wall_masks)[0]:
-            log_string += "Hit wall "
-            best_action = int(np.argmax(action * np.array(wall_masks)))
-        
+      
         forbidden_move_masks = self.banned_forbidden_moves(state, snake_id, turn_count, 
                                                            health, json)
-        if best_action not in np.where(forbidden_move_masks)[0]:
-            log_string += "Foribidden "
-            mask = np.logical_not(forbidden_move_masks) * -1e6
-            best_action = int(np.argmax(action * mask))
             
         go_to_food_masks = self.go_to_food_if_close(state, snake_id, turn_count, health, json)
-        if best_action not in np.where(go_to_food_masks)[0]:
-            log_string += "Food "
-            best_action = int(np.argmax(action * np.array(go_to_food_masks)))
-
-        # TO DO, add your own heuristics
-        if best_action not in [0, 1, 2, 3]:
-            best_action = random.choice([0, 1, 2, 3])
+       
+        print("==wall==")
+        print(str(wall_masks))
+        print("==forbidden==")
+        print(str(forbidden_move_masks))
+        print("==food==")
+        print(str(go_to_food_masks))
+    
+        action = action * np.array(wall_masks) * np.array(forbidden_move_masks) * np.array(go_to_food_masks)
+        
+        print(action)
+       
+        
+        best_action = int(np.argmax(action))
+        
+        print(best_action)
+        
+        print("====")
+        
+        
         return best_action, log_string
