@@ -43,8 +43,54 @@ export function move(gameState: GameState): MoveResponse {
 
     // TODO: Step 1 - Don't hit walls.
     // Use information in gameState to prevent your Battlesnake from moving beyond the boundaries of the board.
-    // const boardWidth = gameState.board.width
-    // const boardHeight = gameState.board.height
+    const boardWidth = gameState.board.width
+    const boardHeight = gameState.board.height
+    if(myHead.x+1 == boardWidth && myHead.y+1 == boardHeight){
+      //top right corner - move down
+      possibleMoves.up = false
+      possibleMoves.right = false
+    }
+    else if(myHead.x == 0 && myHead.y+1 == boardHeight){
+      //top left corner - move down
+      possibleMoves.up = false
+      possibleMoves.left = false
+    }
+    else if(myHead.x+1 == boardWidth && myHead.y == 0){
+      //bottom right corner - move up
+      possibleMoves.down = false
+      possibleMoves.right = false
+    }
+    else if(myHead.x == 0 && myHead.y == 0){
+      //bottom left corner - move up
+      possibleMoves.down = false
+      possibleMoves.left = false
+    }
+      
+    //not corners - direct edges
+    else if(myHead.y+1 < boardHeight && myHead.x+1 == boardWidth){
+      //colliding into right wall -> move up or down
+      //add extra logic for cases for nearest food or avoid other snake
+      possibleMoves.left = false
+      possibleMoves.right = false
+    }
+    else if(myHead.y+1 < boardHeight && myHead.x == 0){
+      //colliding into left wall -> move up or down
+      //add extra logic for cases for nearest food or avoid other snake
+      possibleMoves.left = false
+      possibleMoves.right = false
+    }
+    else if(myHead.y+1 == boardHeight && myHead.x+1 < boardWidth){
+      //colliding into top wall -> move left or right
+      //add extra logic for cases for nearest food or avoid other snake
+      possibleMoves.up = false
+      possibleMoves.down = false
+    }
+    else if(myHead.y == 0 && myHead.x+1 < boardWidth){
+      //colliding into bottom wall -> move left or right
+      //add extra logic for cases for nearest food or avoid other snake
+      possibleMoves.up = false
+      possibleMoves.down = false
+    }
 
     // TODO: Step 2 - Don't hit yourself.
     // Use information in gameState to prevent your Battlesnake from colliding with itself.
