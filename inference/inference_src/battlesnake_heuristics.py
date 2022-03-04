@@ -17,6 +17,7 @@ try:
     from heuristics import Heuristics
 except ModuleNotFoundError:
     from inference.inference_src.heuristics import Heuristics
+from 
 
 class MyBattlesnakeHeuristics(Heuristics):
     '''
@@ -63,17 +64,21 @@ class MyBattlesnakeHeuristics(Heuristics):
         i, j = your_snake_body[0]["y"], your_snake_body[0]["x"]
         if len(your_snake_body) == 1:
             return [True, True, True, True]
-        next_i, next_j = your_snake_body[1]["y"], your_snake_body[1]["x"]
         
-        if -1 in state:
-            border_len = int((state.shape[0] - json["board"]["height"])/2)
-            i, j = i + border_len, j + border_len
-            next_i, next_j = next_i + border_len, next_j + border_len
+        
+        
+        
+#         next_i, next_j = your_snake_body[1]["y"], your_snake_body[1]["x"]
+        
+#         if -1 in state:
+#             border_len = int((state.shape[0] - json["board"]["height"])/2)
+#             i, j = i + border_len, j + border_len
+#             next_i, next_j = next_i + border_len, next_j + border_len
 
-        up = not (i+1 == next_i and j == next_j)
-        down = not (i-1 == next_i and j == next_j)
-        left = not (i == next_i and j-1 == next_j)
-        right = not (i == next_i and j+1 == next_j)
+#         up = not (i+1 == next_i and j == next_j)
+#         down = not (i-1 == next_i and j == next_j)
+#         left = not (i == next_i and j-1 == next_j)
+#         right = not (i == next_i and j+1 == next_j)
       
         return [up, down, left, right]
     
