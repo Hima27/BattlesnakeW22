@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express"
 
-import { info, start, move, end } from "./logic";
+import { info, start, move, end,init } from "./logic";
 
 const app = express()
 app.use(express.json())
@@ -26,6 +26,10 @@ app.post("/move", (req: Request, res: Response) => {
 app.post("/end", (req: Request, res: Response) => {
     res.send(end(req.body))
 });
+
+
+//inits game grid
+init(11,11)
 
 // Start the Express server
 app.listen(port, () => {
