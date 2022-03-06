@@ -1,5 +1,9 @@
-import { InfoResponse, GameState, MoveResponse, Game, Battlesnake, Coord } from "./types"
-import { GridCell } from "./gridCell"
+import { InfoResponse, GameState, MoveResponse } from "./types"
+import { Heuristic } from "./heuristic"
+
+
+
+const heuristic = new Heuristic(11, 11)
 
 export function info(): InfoResponse {
   console.log("INFO")
@@ -24,8 +28,8 @@ export function end(gameState: GameState): void {
 
 export function move(gameState: GameState): MoveResponse {
 
+  const move = heuristic.move(gameState)
 
-
-  console.log(`${gameState.game.id} MOVE ${gameState.turn}: ${response.move}`)
-  return response
+  console.log(`${gameState.game.id} MOVE ${gameState.turn}: ${move}`)
+  return move
 }

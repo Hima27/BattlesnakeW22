@@ -122,14 +122,18 @@ export class Heuristic {
     let maskPipeline: Mask[] = [this.getSnakeCollisionMask(gameState), this.getWallCollisionMask(gameState)]
 
 
+    console.log(maskPipeline)
+
 
     maskPipeline.forEach((mask: Mask) => {
       possibleMoves.up = mask.up && possibleMoves.up
-      possibleMoves.down = mask.up && possibleMoves.down
-      possibleMoves.left = mask.up && possibleMoves.left
-      possibleMoves.right = mask.up && possibleMoves.right
+      possibleMoves.down = mask.down && possibleMoves.down
+      possibleMoves.left = mask.left && possibleMoves.left
+      possibleMoves.right = mask.right && possibleMoves.right
     })
 
+
+    console.log(possibleMoves)
 
 
     // TODO: Step 4 - Find food.
@@ -143,7 +147,7 @@ export class Heuristic {
       return entry[0]
     })
 
-    console.log(safeMoves)
+
     const response: MoveResponse = {
       move: safeMoves[Math.floor(Math.random() * safeMoves.length)],
     }

@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express"
 
-import { info, start, move, end, init } from "./logic";
+import { info, start, move, end } from "./logic";
 
 const app = express()
 app.use(express.json())
