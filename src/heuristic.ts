@@ -1,6 +1,7 @@
 import { GridCell } from "./gridCell"
-import { availableSpace, printGrid, clearGrid } from "./heuristicUtils"
+import { availableSpace, printGrid, clearGrid, getSquaredDistance } from "./heuristicUtils"
 import { InfoResponse, GameState, MoveResponse, Game, Battlesnake, Coord } from "./types"
+import _ from "lodash"
 
 type PossibleMoveTendencies = {
   up: number,
@@ -16,6 +17,10 @@ type Mask = PossibleMoveTendencies
 export class Heuristic {
 
   grid: GridCell[][] = []
+
+  foodWeight: number = 1
+  spaceWeight: number = 1
+  criticalHealth: number = 50
 
   constructor(width: number, height: number) {
     for (let y = 0; y < height; y++) {
@@ -36,11 +41,42 @@ export class Heuristic {
   }
 
 
-  getSnakeCollisonMask2(gameState: GameState): Mask {
+  //Adjustable soft tendencies to get food
+  getFoodMask(gameState: GameState): Mask {
 
-    const THRESHOLD = 20
+    const myHead = gameState.you.head
 
-    // const topAvailableSpaces = availableSpace(this.grid,)
+    const foods = gameState.board.food
+
+    const closestFood = _.minBy(foods, (food) => { return getSquaredDistance(food, myHead) })
+
+    let topTendency = 0
+    let leftTendency = 0
+    let rightTendency = 0
+    let downTendency = 0
+
+    if (gameState.you.health < this.criticalHealth) {
+      this.foodWeight = 1
+    } else {
+      this.foodWeight = -1
+    }
+
+    if (closestFood) {
+      topTendency = this.foodWeight * (closestFood.y - myHead.y)
+      leftTendency = -this.foodWeight * (closestFood.x - myHead.x)
+      rightTendency = this.foodWeight * (closestFood.x - myHead.x)
+      downTendency = -this.foodWeight * (closestFood.y - myHead.y)
+    }
+
+
+    return { up: topTendency, down: downTendency, left: leftTendency, right: rightTendency }
+
+
+  }
+
+
+  //Adjustable soft tendencies to not get suffocated in future moves
+  getSnakeAvailableSpaceMask(gameState: GameState): Mask {
 
     const myHead = gameState.you.head
 
@@ -48,15 +84,11 @@ export class Heuristic {
     const bottomAvailableSpaces = availableSpace(this.grid, { x: myHead.x, y: myHead.y - 1 })
     const leftAvailableSpaces = availableSpace(this.grid, { x: myHead.x - 1, y: myHead.y })
     const rightAvailableSpaces = availableSpace(this.grid, { x: myHead.x + 1, y: myHead.y })
-
-    printGrid(this.grid)
-    console.log({ up: topAvailableSpaces, down: bottomAvailableSpaces, left: leftAvailableSpaces, right: rightAvailableSpaces })
-
-    return { up: topAvailableSpaces, down: bottomAvailableSpaces, left: leftAvailableSpaces, right: rightAvailableSpaces }
-
+    return { up: this.spaceWeight * topAvailableSpaces, down: this.spaceWeight * bottomAvailableSpaces, left: this.spaceWeight * leftAvailableSpaces, right: this.spaceWeight * rightAvailableSpaces }
 
   }
 
+  //Absolute tendencies to not hit snakes
   getSnakeCollisionMask(gameState: GameState): Mask {
 
     let mask: Mask = {
@@ -105,6 +137,7 @@ export class Heuristic {
     return mask
   }
 
+  //Absolute tendencies to not hit a wall
   getWallCollisionMask(gameState: GameState): Mask {
     let mask: Mask = {
       up: 0,
@@ -146,7 +179,7 @@ export class Heuristic {
       right: 0
     }
 
-    let maskPipeline: Mask[] = [this.getSnakeCollisionMask(gameState), this.getSnakeCollisonMask2(gameState), this.getWallCollisionMask(gameState)]
+    let maskPipeline: Mask[] = [this.getSnakeCollisionMask(gameState), this.getSnakeAvailableSpaceMask(gameState), this.getWallCollisionMask(gameState), this.getFoodMask(gameState)]
 
 
     console.log(maskPipeline)
@@ -162,12 +195,6 @@ export class Heuristic {
 
     console.log(possibleMoveTendencies)
 
-
-    // TODO: Step 4 - Find food.
-    // Use information in gameState to seek out and find food.
-
-    // Finally, choose a move from the available safe moves.
-    // TODO: Step 5 - Select a move to make based on strategy, rather than random.
 
     let maxTendency = -1 * Infinity
     Object.entries(possibleMoveTendencies).forEach(([move, tendency]) => {

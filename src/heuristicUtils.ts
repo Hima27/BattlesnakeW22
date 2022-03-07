@@ -54,6 +54,10 @@ export function clearGrid(grid: GridCell[][]) {
   }
 }
 
+export function getSquaredDistance(you: Coord, destination: Coord): number {
+  return (you.x - destination.x) * (you.x - destination.x) + (you.y - destination.y) * (you.y - destination.y)
+}
+
 function availableSpaceHelper(grid: FloodFillCell[][], start: Coord): number {
   //uses flood filling
 
