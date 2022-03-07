@@ -16,6 +16,44 @@ function isOnBoard(coord: Coord) {
   return (0 <= coord.x && coord.x < WIDTH) && (0 <= coord.y && coord.y < HEIGHT)
 }
 
+
+function printCell(cell: GridCell) {
+  if (cell.isFood) {
+    process.stdout.write("F")
+  } else if (cell.isHead) {
+    process.stdout.write("H")
+  } else if (cell.isSnake) {
+    process.stdout.write("S")
+  } else {
+    process.stdout.write("X")
+  }
+}
+
+export function printGrid(grid: GridCell[][]) {
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      printCell(grid[y][x])
+    }
+    console.log()
+  }
+}
+
+export function clearGrid(grid: GridCell[][]) {
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      grid[y][x] = {
+        isSnake: false,
+        isOurself: false,
+        isFood: false,
+        isHead: false,
+        likelyMove: "",
+        x: x,
+        y: y
+      }
+    }
+  }
+}
+
 function availableSpaceHelper(grid: FloodFillCell[][], start: Coord): number {
   //uses flood filling
 

@@ -1,15 +1,15 @@
 import { GridCell } from "./gridCell"
-import { availableSpace } from "./heuristicUtils"
+import { availableSpace, printGrid, clearGrid } from "./heuristicUtils"
 import { InfoResponse, GameState, MoveResponse, Game, Battlesnake, Coord } from "./types"
 
-type PossibleMoves = {
-  up: boolean,
-  down: boolean,
-  left: boolean,
-  right: boolean
+type PossibleMoveTendencies = {
+  up: number,
+  down: number,
+  left: number,
+  right: number
 }
 
-type Mask = PossibleMoves
+type Mask = PossibleMoveTendencies
 
 
 
@@ -38,39 +38,32 @@ export class Heuristic {
 
   getSnakeCollisonMask2(gameState: GameState): Mask {
 
-    const THRESHOLD = 5
-
-    let possibleMoves: PossibleMoves = {
-      up: true,
-      down: true,
-      left: true,
-      right: true
-    }
+    const THRESHOLD = 20
 
     // const topAvailableSpaces = availableSpace(this.grid,)
 
     const myHead = gameState.you.head
 
     const topAvailableSpaces = availableSpace(this.grid, { x: myHead.x, y: myHead.y + 1 })
-    console.log(this.grid)
     const bottomAvailableSpaces = availableSpace(this.grid, { x: myHead.x, y: myHead.y - 1 })
     const leftAvailableSpaces = availableSpace(this.grid, { x: myHead.x - 1, y: myHead.y })
     const rightAvailableSpaces = availableSpace(this.grid, { x: myHead.x + 1, y: myHead.y })
 
+    printGrid(this.grid)
     console.log({ up: topAvailableSpaces, down: bottomAvailableSpaces, left: leftAvailableSpaces, right: rightAvailableSpaces })
 
-    return { up: topAvailableSpaces > THRESHOLD, down: bottomAvailableSpaces > THRESHOLD, left: leftAvailableSpaces > THRESHOLD, right: rightAvailableSpaces > THRESHOLD }
+    return { up: topAvailableSpaces, down: bottomAvailableSpaces, left: leftAvailableSpaces, right: rightAvailableSpaces }
 
 
   }
 
   getSnakeCollisionMask(gameState: GameState): Mask {
 
-    let possibleMoves: PossibleMoves = {
-      up: true,
-      down: true,
-      left: true,
-      right: true
+    let mask: Mask = {
+      up: 0,
+      down: 0,
+      left: 0,
+      right: 0
     }
 
     // Step 0: Don't hit snakes
@@ -94,13 +87,13 @@ export class Heuristic {
 
 
         if (bodyPart.x == myHead.x - 1 && bodyPart.y == myHead.y) {
-          possibleMoves.left = false
+          mask.left = -1 * Infinity
         } else if (bodyPart.x == myHead.x + 1 && bodyPart.y == myHead.y) {
-          possibleMoves.right = false
+          mask.right = -1 * Infinity
         } else if (bodyPart.y == myHead.y - 1 && bodyPart.x == myHead.x) {
-          possibleMoves.down = false
+          mask.down = -1 * Infinity
         } else if (bodyPart.y == myHead.y + 1 && bodyPart.x == myHead.x) {
-          possibleMoves.up = false
+          mask.up = -1 * Infinity
         }
       }
     }
@@ -109,15 +102,15 @@ export class Heuristic {
       this.grid[myBodyPart.y][myBodyPart.x].isOurself = true
     }
 
-    return possibleMoves
+    return mask
   }
 
   getWallCollisionMask(gameState: GameState): Mask {
-    let possibleMoves: Mask = {
-      up: true,
-      down: true,
-      left: true,
-      right: true
+    let mask: Mask = {
+      up: 0,
+      down: 0,
+      left: 0,
+      right: 0
     }
     const boardWidth = gameState.board.width
     const boardHeight = gameState.board.height
@@ -125,29 +118,32 @@ export class Heuristic {
 
 
     if (myHead.x + 1 >= boardWidth) {
-      possibleMoves.right = false
+      mask.right = -1 * Infinity
     }
     if (myHead.x - 1 < 0) {
-      possibleMoves.left = false
+      mask.left = -1 * Infinity
     }
     if (myHead.y + 1 >= boardHeight) {
-      possibleMoves.up = false
+      mask.up = -1 * Infinity
     }
     if (myHead.y - 1 < 0) {
-      possibleMoves.down = false
+      mask.down = -1 * Infinity
     }
 
-    return possibleMoves
+    return mask
 
   }
 
 
   move(gameState: GameState) {
-    let possibleMoves: PossibleMoves = {
-      up: true,
-      down: true,
-      left: true,
-      right: true
+    clearGrid(this.grid)
+
+
+    let possibleMoveTendencies: PossibleMoveTendencies = {
+      up: 0,
+      down: 0,
+      left: 0,
+      right: 0
     }
 
     let maskPipeline: Mask[] = [this.getSnakeCollisionMask(gameState), this.getSnakeCollisonMask2(gameState), this.getWallCollisionMask(gameState)]
@@ -157,14 +153,14 @@ export class Heuristic {
 
 
     maskPipeline.forEach((mask: Mask) => {
-      possibleMoves.up = mask.up && possibleMoves.up
-      possibleMoves.down = mask.down && possibleMoves.down
-      possibleMoves.left = mask.left && possibleMoves.left
-      possibleMoves.right = mask.right && possibleMoves.right
+      possibleMoveTendencies.up += mask.up
+      possibleMoveTendencies.down += mask.down
+      possibleMoveTendencies.left += mask.left
+      possibleMoveTendencies.right += mask.right
     })
 
 
-    console.log(possibleMoves)
+    console.log(possibleMoveTendencies)
 
 
     // TODO: Step 4 - Find food.
@@ -172,15 +168,24 @@ export class Heuristic {
 
     // Finally, choose a move from the available safe moves.
     // TODO: Step 5 - Select a move to make based on strategy, rather than random.
-    const safeMoves = Object.entries(possibleMoves).filter((entry) => {
-      return entry[1]
-    }).map((entry) => {
-      return entry[0]
+
+    let maxTendency = -1 * Infinity
+    Object.entries(possibleMoveTendencies).forEach(([move, tendency]) => {
+      if (tendency > maxTendency) {
+        maxTendency = tendency
+      }
     })
 
+    let bestMoves: string[] = []
+
+    Object.entries(possibleMoveTendencies).forEach(([move, tendency]) => {
+      if (tendency == maxTendency) {
+        bestMoves.push(move)
+      }
+    })
 
     const response: MoveResponse = {
-      move: safeMoves[Math.floor(Math.random() * safeMoves.length)],
+      move: bestMoves[Math.floor(Math.random() * bestMoves.length)]
     }
 
     return response
