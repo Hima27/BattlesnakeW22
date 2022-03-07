@@ -1,4 +1,5 @@
 import { GridCell } from "./gridCell"
+import { availableSpace } from "./heuristicUtils"
 import { InfoResponse, GameState, MoveResponse, Game, Battlesnake, Coord } from "./types"
 
 type PossibleMoves = {
@@ -9,7 +10,6 @@ type PossibleMoves = {
 }
 
 type Mask = PossibleMoves
-
 
 
 
@@ -26,11 +26,42 @@ export class Heuristic {
           isOurself: false,
           isFood: false,
           isHead: false,
-          likelyMove: ""
+          likelyMove: "",
+          x: x,
+          y: y
         })
       }
       this.grid.push(gridRow)
     }
+  }
+
+
+  getSnakeCollisonMask2(gameState: GameState): Mask {
+
+    const THRESHOLD = 5
+
+    let possibleMoves: PossibleMoves = {
+      up: true,
+      down: true,
+      left: true,
+      right: true
+    }
+
+    // const topAvailableSpaces = availableSpace(this.grid,)
+
+    const myHead = gameState.you.head
+
+    const topAvailableSpaces = availableSpace(this.grid, { x: myHead.x, y: myHead.y + 1 })
+    console.log(this.grid)
+    const bottomAvailableSpaces = availableSpace(this.grid, { x: myHead.x, y: myHead.y - 1 })
+    const leftAvailableSpaces = availableSpace(this.grid, { x: myHead.x - 1, y: myHead.y })
+    const rightAvailableSpaces = availableSpace(this.grid, { x: myHead.x + 1, y: myHead.y })
+
+    console.log({ up: topAvailableSpaces, down: bottomAvailableSpaces, left: leftAvailableSpaces, right: rightAvailableSpaces })
+
+    return { up: topAvailableSpaces > THRESHOLD, down: bottomAvailableSpaces > THRESHOLD, left: leftAvailableSpaces > THRESHOLD, right: rightAvailableSpaces > THRESHOLD }
+
+
   }
 
   getSnakeCollisionMask(gameState: GameState): Mask {
@@ -119,7 +150,7 @@ export class Heuristic {
       right: true
     }
 
-    let maskPipeline: Mask[] = [this.getSnakeCollisionMask(gameState), this.getWallCollisionMask(gameState)]
+    let maskPipeline: Mask[] = [this.getSnakeCollisionMask(gameState), this.getSnakeCollisonMask2(gameState), this.getWallCollisionMask(gameState)]
 
 
     console.log(maskPipeline)

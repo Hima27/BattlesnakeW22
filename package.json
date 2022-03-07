@@ -6,7 +6,7 @@
     "build": "tsc",
     "prestart": "npm run build",
     "start": "node build/index.js",
-    "test": "jest --silent"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
