@@ -1,9 +1,10 @@
 import { InfoResponse, GameState, MoveResponse } from "./types"
 import { Heuristic } from "./heuristic"
+import { HEIGHT, WIDTH } from "./constants"
 
 
 
-const heuristic = new Heuristic(11, 11)
+const heuristic = new Heuristic(WIDTH, HEIGHT)
 
 export function info(): InfoResponse {
   console.log("INFO")
