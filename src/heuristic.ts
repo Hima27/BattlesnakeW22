@@ -1,7 +1,9 @@
 import { GridCell } from "./gridCell"
-import { availableSpace, printGrid, clearGrid, getSquaredDistance, canWinHeadOn } from "./heuristicUtils"
+import { availableSpace, printGrid, clearGrid, getSquaredDistance, canWinHeadOn, toSimpleGrid } from "./heuristicUtils"
 import { InfoResponse, GameState, MoveResponse, Game, Battlesnake, Coord } from "./types"
 import _ from "lodash"
+import { AStarFinder } from "astar-typescript";
+import { HEIGHT, WIDTH } from "./constants";
 
 type PossibleMoveTendencies = {
   up: number,
@@ -63,12 +65,10 @@ export class Heuristic {
 
     const otherSnakes = gameState.board.snakes.filter((snake: Battlesnake) => { return (snake.head.y != me.head.y) || (snake.head.x != me.head.x) })
 
-    console.log(me.head)
 
 
     for (const otherSnake of otherSnakes) {
       const otherSnakeHead = otherSnake.head
-      console.log(otherSnakeHead)
 
       if ((otherSnakeHead.x == myHead.x) && (otherSnakeHead.y == myHead.y + 2)) {
         //headOn
@@ -179,21 +179,61 @@ export class Heuristic {
     let rightTendency = 0
     let downTendency = 0
 
-    if (gameState.you.health < this.criticalHealth) {
-      this.foodWeight = 1
-    } else {
-      this.foodWeight = -1
-    }
+    // if (gameState.you.health < this.criticalHealth) {
+    //   this.foodWeight = 1
+    // } else {
+    //   this.foodWeight = -1
+    // }
+
 
     if (closestFood) {
-      topTendency = this.foodWeight * (closestFood.y - myHead.y)
-      leftTendency = -this.foodWeight * (closestFood.x - myHead.x)
-      rightTendency = this.foodWeight * (closestFood.x - myHead.x)
-      downTendency = -this.foodWeight * (closestFood.y - myHead.y)
+
+      let simpleGrid = toSimpleGrid(this.grid)
+
+      simpleGrid[myHead.y][myHead.x] = 0
+
+      let aStarInstance = new AStarFinder({
+        grid: {
+          matrix: simpleGrid
+        },
+        includeStartNode: false,
+        includeEndNode: true
+      })
+
+
+      // console.log(myHead)
+      // console.log(closestFood)
+      // for (let y = 0; y < HEIGHT; y++) {
+      //   for (let x = 0; x < WIDTH; x++) {
+      //     if (y == closestFood.y && x == closestFood.x) {
+      //       process.stdout.write('F')
+      //     } else {
+      //       process.stdout.write(toSimpleGrid(this.grid)[y][x].toString())
+      //     }
+
+      //   }
+      //   console.log()
+      // }
+
+      let path = aStarInstance.findPath({ x: myHead.x, y: myHead.y }, { x: closestFood.x, y: closestFood.y })
+
+      if (!_.isEmpty(path)) {
+        let firstStepX = path[0][0]
+        let firstStepY = path[0][1]
+
+        topTendency = this.foodWeight * (firstStepY - myHead.y)
+        leftTendency = -this.foodWeight * (firstStepX - myHead.x)
+        rightTendency = this.foodWeight * (firstStepX - myHead.x)
+        downTendency = -this.foodWeight * (firstStepY - myHead.y)
+      }
     }
+
 
 
     return { up: topTendency, down: downTendency, left: leftTendency, right: rightTendency }
+
+
+
 
 
   }
@@ -318,7 +358,6 @@ export class Heuristic {
 
 
     console.log(possibleMoveTendencies)
-
 
     let maxTendency = -1 * Infinity
     Object.entries(possibleMoveTendencies).forEach(([move, tendency]) => {

@@ -54,6 +54,18 @@ export function clearGrid(grid: GridCell[][]) {
   }
 }
 
+export function toSimpleGrid(grid: GridCell[][]): number[][] {
+  let simpleGrid: number[][] = []
+  for (let y = 0; y < HEIGHT; y++) {
+    let simpleGridRow: number[] = []
+    for (let x = 0; x < WIDTH; x++) {
+      simpleGridRow.push(isFree(grid[y][x]) ? 0 : 1)
+    }
+    simpleGrid.push(simpleGridRow)
+  }
+  return simpleGrid
+}
+
 export function canWinHeadOn(you: Battlesnake, them: Battlesnake) {
   return you.length > them.length
 }
