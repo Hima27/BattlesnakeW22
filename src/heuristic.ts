@@ -1,5 +1,5 @@
 import { GridCell } from "./gridCell"
-import { availableSpace, printGrid, clearGrid, getSquaredDistance } from "./heuristicUtils"
+import { availableSpace, printGrid, clearGrid, getSquaredDistance, canWinHeadOn } from "./heuristicUtils"
 import { InfoResponse, GameState, MoveResponse, Game, Battlesnake, Coord } from "./types"
 import _ from "lodash"
 
@@ -40,6 +40,130 @@ export class Heuristic {
     }
   }
 
+
+
+
+
+  //Absolute tendencies to escape or win head-ons
+  getHeadOnMask(gameState: GameState): Mask {
+    const me = gameState.you
+    const myHead = me.head
+
+    let arbitraryConstant = 10
+
+    let topTendency = 0
+    let leftTendency = 0
+    let rightTendency = 0
+    let downTendency = 0
+
+
+    //condition to determine if we are likely to head on
+
+    // chose to check snakes instead of location first
+
+    const otherSnakes = gameState.board.snakes.filter((snake: Battlesnake) => { return (snake.head.y != me.head.y) || (snake.head.x != me.head.x) })
+
+    console.log(me.head)
+
+
+    for (const otherSnake of otherSnakes) {
+      const otherSnakeHead = otherSnake.head
+      console.log(otherSnakeHead)
+
+      if ((otherSnakeHead.x == myHead.x) && (otherSnakeHead.y == myHead.y + 2)) {
+        //headOn
+        if (canWinHeadOn(me, otherSnake)) {
+          //head on this bih
+          topTendency = arbitraryConstant
+        } else {
+          topTendency = -1 * arbitraryConstant
+        }
+      } else if ((otherSnakeHead.x == myHead.x + 1) && (otherSnakeHead.y == myHead.y + 1)) {
+        //headOn
+        if (canWinHeadOn(me, otherSnake)) {
+          //head on this bih
+          topTendency = arbitraryConstant
+          rightTendency = arbitraryConstant
+        } else {
+          topTendency = -1 * arbitraryConstant
+          rightTendency = -1 * arbitraryConstant
+        }
+      } else if ((otherSnakeHead.x == myHead.x + 2) && (otherSnakeHead.y == myHead.y)) {
+        //headOn
+        if (canWinHeadOn(me, otherSnake)) {
+          //head on this bih
+          rightTendency = arbitraryConstant
+        } else {
+          rightTendency = -1 * arbitraryConstant
+        }
+      } else if ((otherSnakeHead.x == myHead.x + 1) && (otherSnakeHead.y == myHead.y - 1)) {
+        //headOn
+        if (canWinHeadOn(me, otherSnake)) {
+          //head on this bih
+          downTendency = arbitraryConstant
+          rightTendency = arbitraryConstant
+        } else {
+          downTendency = -1 * arbitraryConstant
+          rightTendency = -1 * arbitraryConstant
+        }
+      } else if ((otherSnakeHead.x == myHead.x) && (otherSnakeHead.y == myHead.y - 2)) {
+        //headOn
+        if (canWinHeadOn(me, otherSnake)) {
+          //head on this bih
+          downTendency = arbitraryConstant
+        } else {
+          downTendency = -1 * arbitraryConstant
+        }
+      } else if ((otherSnakeHead.x == myHead.x - 1) && (otherSnakeHead.y == myHead.y - 1)) {
+        //headOn
+        if (canWinHeadOn(me, otherSnake)) {
+          //head on this bih
+          leftTendency = arbitraryConstant
+          downTendency = arbitraryConstant
+        } else {
+          leftTendency = -1 * arbitraryConstant
+          downTendency = -1 * arbitraryConstant
+        }
+      } else if ((otherSnakeHead.x == myHead.x - 2) && (otherSnakeHead.y == myHead.y)) {
+        //headOn
+        if (canWinHeadOn(me, otherSnake)) {
+          //head on this bih
+          leftTendency = arbitraryConstant
+        } else {
+          leftTendency = -1 * arbitraryConstant
+        }
+      } else if ((otherSnakeHead.x == myHead.x - 1) && (otherSnakeHead.y == myHead.y + 1)) {
+        //headOn
+        if (canWinHeadOn(me, otherSnake)) {
+          //head on this bih
+          topTendency = arbitraryConstant
+          leftTendency = arbitraryConstant
+        } else {
+          topTendency = -1 * arbitraryConstant
+          leftTendency = -1 * arbitraryConstant
+        }
+      }
+    }
+
+    console.log({ up: topTendency, down: downTendency, left: leftTendency, right: rightTendency })
+
+    return { up: topTendency, down: downTendency, left: leftTendency, right: rightTendency }
+
+
+
+    //  condition to determine if we are going to win head on
+
+    //    true - do head on
+
+    //    false - go other way
+
+
+
+
+
+
+
+  }
 
   //Adjustable soft tendencies to get food
   getFoodMask(gameState: GameState): Mask {
@@ -179,7 +303,7 @@ export class Heuristic {
       right: 0
     }
 
-    let maskPipeline: Mask[] = [this.getSnakeCollisionMask(gameState), this.getSnakeAvailableSpaceMask(gameState), this.getWallCollisionMask(gameState), this.getFoodMask(gameState)]
+    let maskPipeline: Mask[] = [this.getSnakeCollisionMask(gameState), this.getSnakeAvailableSpaceMask(gameState), this.getWallCollisionMask(gameState), this.getFoodMask(gameState), this.getHeadOnMask(gameState)]
 
 
     console.log(maskPipeline)

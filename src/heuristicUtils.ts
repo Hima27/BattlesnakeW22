@@ -1,6 +1,6 @@
 import { HEIGHT, WIDTH } from "./constants";
 import { GridCell } from "./gridCell";
-import { Coord } from "./types";
+import { Battlesnake, Coord } from "./types";
 
 
 
@@ -52,6 +52,10 @@ export function clearGrid(grid: GridCell[][]) {
       }
     }
   }
+}
+
+export function canWinHeadOn(you: Battlesnake, them: Battlesnake) {
+  return you.length > them.length
 }
 
 export function getSquaredDistance(you: Coord, destination: Coord): number {
