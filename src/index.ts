@@ -1,3 +1,4 @@
+import { AStarFinder } from "astar-typescript";
 import express, { Request, Response } from "express"
 
 import { info, start, move, end } from "./logic";
@@ -26,6 +27,37 @@ app.post("/move", (req: Request, res: Response) => {
 app.post("/end", (req: Request, res: Response) => {
     res.send(end(req.body))
 });
+
+
+
+// let myMatrix = [
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0],
+//     [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+// ];
+
+// let aStarInstance = new AStarFinder({
+//     grid: {
+//         matrix: myMatrix
+//     },
+//     includeStartNode: false,
+//     includeEndNode: true
+// });
+// let startPos = { x: 10, y: 10 };
+// let goalPos = { x: 4, y: 9 };
+
+// let myPathway = aStarInstance.findPath(startPos, goalPos);
+
+// console.log(myPathway)
+
 
 
 // Start the Express server
