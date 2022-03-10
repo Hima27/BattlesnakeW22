@@ -26,7 +26,7 @@ export class Heuristic {
   currentFoodWeight: number = this.foodWeight
   spaceWeight: number = 1
   criticalHealth: number = 75
-  headOnWeight: number = 10
+  headOnWeight: number = 20
   goToCenterWeight: number = 1
   randomWeight: number = 1
   miniMaxWeight: number = 10
@@ -192,6 +192,23 @@ export class Heuristic {
 
   }
 
+
+  getBestFood(gameState: GameState): Coord {
+
+    const foodRanking = []
+
+    for (const food of gameState.board.food) {
+      let ranking = -1 * getSquaredDistance(food, { x: WIDTH / 2, y: HEIGHT / 2 })
+      foodRanking.push({ ranking: ranking, coord: food })
+    }
+
+    console.log(foodRanking)
+
+    return foodRanking.sort((a: { ranking: number, coord: Coord }, b: { ranking: number, coord: Coord }) => {
+      return b.ranking - a.ranking
+    })[0].coord
+  }
+
   //Adjustable soft tendencies to get food
   getFoodMask(gameState: GameState): Mask {
 
@@ -199,7 +216,11 @@ export class Heuristic {
 
     const foods = gameState.board.food
 
-    const closestFood = _.minBy(foods, (food) => { return getSquaredDistance(food, myHead) })
+    const bestFood = this.getBestFood(gameState)
+
+    console.log("Best ", bestFood)
+
+
 
     let topTendency = 0
     let leftTendency = 0
@@ -213,7 +234,7 @@ export class Heuristic {
     }
 
 
-    if (closestFood) {
+    if (bestFood) {
 
       let simpleGrid = toSimpleGrid(this.grid)
 
@@ -242,7 +263,7 @@ export class Heuristic {
       //   console.log()
       // }
 
-      let path = aStarInstance.findPath({ x: myHead.x, y: myHead.y }, { x: closestFood.x, y: closestFood.y })
+      let path = aStarInstance.findPath({ x: myHead.x, y: myHead.y }, { x: bestFood.x, y: bestFood.y })
 
       if (!_.isEmpty(path)) {
         let firstStepX = path[0][0]
