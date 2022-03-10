@@ -1,9 +1,11 @@
 import { GridCell } from "./gridCell"
-import { availableSpace, printGrid, clearGrid, getSquaredDistance, canWinHeadOn, toSimpleGrid } from "./heuristicUtils"
+import { availableSpace, printGrid, clearGrid, getSquaredDistance, canWinHeadOn, toSimpleGrid, wallHitDirections, populateGrid, snakeHitDirections, createGrid } from "./heuristicUtils"
 import { InfoResponse, GameState, MoveResponse, Game, Battlesnake, Coord } from "./types"
 import _ from "lodash"
 import { AStarFinder } from "astar-typescript";
-import { HEIGHT, WIDTH } from "./constants";
+import { HEIGHT, USE_LOGGER, WIDTH } from "./constants";
+import { Direction, generatePositions, miniMax, Position } from "./miniMax";
+// import { MiniMaxLogger } from './visualizer/minimaxLogger'
 
 type PossibleMoveTendencies = {
   up: number,
@@ -20,26 +22,51 @@ export class Heuristic {
 
   grid: GridCell[][] = []
 
-  foodWeight: number = 1
+  foodWeight: number = 5
+  currentFoodWeight: number = this.foodWeight
   spaceWeight: number = 1
-  criticalHealth: number = 50
+  criticalHealth: number = 75
+  headOnWeight: number = 10
+  goToCenterWeight: number = 1
+  randomWeight: number = 1
+  miniMaxWeight: number = 10
 
-  constructor(width: number, height: number) {
-    for (let y = 0; y < height; y++) {
-      let gridRow: GridCell[] = []
-      for (let x = 0; x < width; x++) {
-        gridRow.push({
-          isSnake: false,
-          isOurself: false,
-          isFood: false,
-          isHead: false,
-          likelyMove: "",
-          x: x,
-          y: y
-        })
-      }
-      this.grid.push(gridRow)
+  constructor() {
+    this.grid = createGrid()
+  }
+
+  getRandomMask(): Mask {
+    return {
+      up: Math.round(Math.random()) * this.randomWeight,
+      down: Math.round(Math.random()) * this.randomWeight,
+      left: Math.round(Math.random()) * this.randomWeight,
+      right: Math.round(Math.random()) * this.randomWeight,
     }
+  }
+
+
+
+  //Soft tendencies to stay near the center
+  getToCenterMask(gameState: GameState): Mask {
+    const me = gameState.you
+    const myHead = me.head
+
+    const center = {
+      x: Math.floor(WIDTH / 2),
+      y: Math.floor(HEIGHT / 2)
+    }
+
+    const tendencies: Mask = {
+      up: this.goToCenterWeight * (center.y - myHead.y),
+      down: -1 * this.goToCenterWeight * (center.y - myHead.y),
+      left: -1 * this.goToCenterWeight * (center.x - myHead.x),
+      right: this.goToCenterWeight * (center.x - myHead.x),
+    }
+
+    return tendencies
+
+
+
   }
 
 
@@ -51,7 +78,7 @@ export class Heuristic {
     const me = gameState.you
     const myHead = me.head
 
-    let arbitraryConstant = 10
+
 
     let topTendency = 0
     let leftTendency = 0
@@ -63,7 +90,7 @@ export class Heuristic {
 
     // chose to check snakes instead of location first
 
-    const otherSnakes = gameState.board.snakes.filter((snake: Battlesnake) => { return (snake.head.y != me.head.y) || (snake.head.x != me.head.x) })
+    const otherSnakes = gameState.board.snakes.slice(1)
 
 
 
@@ -74,73 +101,73 @@ export class Heuristic {
         //headOn
         if (canWinHeadOn(me, otherSnake)) {
           //head on this bih
-          topTendency = arbitraryConstant
+          topTendency = this.headOnWeight
         } else {
-          topTendency = -1 * arbitraryConstant
+          topTendency = -1 * this.headOnWeight
         }
       } else if ((otherSnakeHead.x == myHead.x + 1) && (otherSnakeHead.y == myHead.y + 1)) {
         //headOn
         if (canWinHeadOn(me, otherSnake)) {
           //head on this bih
-          topTendency = arbitraryConstant
-          rightTendency = arbitraryConstant
+          topTendency = this.headOnWeight
+          rightTendency = this.headOnWeight
         } else {
-          topTendency = -1 * arbitraryConstant
-          rightTendency = -1 * arbitraryConstant
+          topTendency = -1 * this.headOnWeight
+          rightTendency = -1 * this.headOnWeight
         }
       } else if ((otherSnakeHead.x == myHead.x + 2) && (otherSnakeHead.y == myHead.y)) {
         //headOn
         if (canWinHeadOn(me, otherSnake)) {
           //head on this bih
-          rightTendency = arbitraryConstant
+          rightTendency = this.headOnWeight
         } else {
-          rightTendency = -1 * arbitraryConstant
+          rightTendency = -1 * this.headOnWeight
         }
       } else if ((otherSnakeHead.x == myHead.x + 1) && (otherSnakeHead.y == myHead.y - 1)) {
         //headOn
         if (canWinHeadOn(me, otherSnake)) {
           //head on this bih
-          downTendency = arbitraryConstant
-          rightTendency = arbitraryConstant
+          downTendency = this.headOnWeight
+          rightTendency = this.headOnWeight
         } else {
-          downTendency = -1 * arbitraryConstant
-          rightTendency = -1 * arbitraryConstant
+          downTendency = -1 * this.headOnWeight
+          rightTendency = -1 * this.headOnWeight
         }
       } else if ((otherSnakeHead.x == myHead.x) && (otherSnakeHead.y == myHead.y - 2)) {
         //headOn
         if (canWinHeadOn(me, otherSnake)) {
           //head on this bih
-          downTendency = arbitraryConstant
+          downTendency = this.headOnWeight
         } else {
-          downTendency = -1 * arbitraryConstant
+          downTendency = -1 * this.headOnWeight
         }
       } else if ((otherSnakeHead.x == myHead.x - 1) && (otherSnakeHead.y == myHead.y - 1)) {
         //headOn
         if (canWinHeadOn(me, otherSnake)) {
           //head on this bih
-          leftTendency = arbitraryConstant
-          downTendency = arbitraryConstant
+          leftTendency = this.headOnWeight
+          downTendency = this.headOnWeight
         } else {
-          leftTendency = -1 * arbitraryConstant
-          downTendency = -1 * arbitraryConstant
+          leftTendency = -1 * this.headOnWeight
+          downTendency = -1 * this.headOnWeight
         }
       } else if ((otherSnakeHead.x == myHead.x - 2) && (otherSnakeHead.y == myHead.y)) {
         //headOn
         if (canWinHeadOn(me, otherSnake)) {
           //head on this bih
-          leftTendency = arbitraryConstant
+          leftTendency = this.headOnWeight
         } else {
-          leftTendency = -1 * arbitraryConstant
+          leftTendency = -1 * this.headOnWeight
         }
       } else if ((otherSnakeHead.x == myHead.x - 1) && (otherSnakeHead.y == myHead.y + 1)) {
         //headOn
         if (canWinHeadOn(me, otherSnake)) {
           //head on this bih
-          topTendency = arbitraryConstant
-          leftTendency = arbitraryConstant
+          topTendency = this.headOnWeight
+          leftTendency = this.headOnWeight
         } else {
-          topTendency = -1 * arbitraryConstant
-          leftTendency = -1 * arbitraryConstant
+          topTendency = -1 * this.headOnWeight
+          leftTendency = -1 * this.headOnWeight
         }
       }
     }
@@ -179,11 +206,11 @@ export class Heuristic {
     let rightTendency = 0
     let downTendency = 0
 
-    // if (gameState.you.health < this.criticalHealth) {
-    //   this.foodWeight = 1
-    // } else {
-    //   this.foodWeight = -1
-    // }
+    if (gameState.you.health < this.criticalHealth) {
+      this.currentFoodWeight = this.foodWeight
+    } else {
+      this.currentFoodWeight = 0
+    }
 
 
     if (closestFood) {
@@ -221,20 +248,16 @@ export class Heuristic {
         let firstStepX = path[0][0]
         let firstStepY = path[0][1]
 
-        topTendency = this.foodWeight * (firstStepY - myHead.y)
-        leftTendency = -this.foodWeight * (firstStepX - myHead.x)
-        rightTendency = this.foodWeight * (firstStepX - myHead.x)
-        downTendency = -this.foodWeight * (firstStepY - myHead.y)
+        topTendency = this.currentFoodWeight * (firstStepY - myHead.y)
+        leftTendency = -this.currentFoodWeight * (firstStepX - myHead.x)
+        rightTendency = this.currentFoodWeight * (firstStepX - myHead.x)
+        downTendency = -this.currentFoodWeight * (firstStepY - myHead.y)
       }
     }
 
 
 
     return { up: topTendency, down: downTendency, left: leftTendency, right: rightTendency }
-
-
-
-
 
   }
 
@@ -255,85 +278,62 @@ export class Heuristic {
   //Absolute tendencies to not hit snakes
   getSnakeCollisionMask(gameState: GameState): Mask {
 
-    let mask: Mask = {
-      up: 0,
-      down: 0,
-      left: 0,
-      right: 0
+    const snakeHitDirs = snakeHitDirections(gameState, gameState.you)
+    return {
+      up: snakeHitDirs.up ? -1 * Infinity : 0,
+      down: snakeHitDirs.down ? -1 * Infinity : 0,
+      left: snakeHitDirs.left ? -1 * Infinity : 0,
+      right: snakeHitDirs.right ? -1 * Infinity : 0,
     }
-
-    // Step 0: Don't hit snakes
-    const myHead = gameState.you.head
-    const myBody = gameState.you.body
-
-    const allSnakes: Battlesnake[] = gameState.board.snakes
-
-
-
-    for (const snake of allSnakes) {
-      const snakeBody: Coord[] = snake.body
-
-      this.grid[snake.head.y][snake.head.x].isHead = true
-
-      for (const bodyPart of snakeBody) {
-
-        this.grid[bodyPart.y][bodyPart.x].isSnake = true
-        this.grid[bodyPart.y][bodyPart.x].isOurself = false
-        this.grid[bodyPart.y][bodyPart.x].isFood = false
-
-
-        if (bodyPart.x == myHead.x - 1 && bodyPart.y == myHead.y) {
-          mask.left = -1 * Infinity
-        } else if (bodyPart.x == myHead.x + 1 && bodyPart.y == myHead.y) {
-          mask.right = -1 * Infinity
-        } else if (bodyPart.y == myHead.y - 1 && bodyPart.x == myHead.x) {
-          mask.down = -1 * Infinity
-        } else if (bodyPart.y == myHead.y + 1 && bodyPart.x == myHead.x) {
-          mask.up = -1 * Infinity
-        }
-      }
-    }
-
-    for (const myBodyPart of myBody) {
-      this.grid[myBodyPart.y][myBodyPart.x].isOurself = true
-    }
-
-    return mask
   }
 
   //Absolute tendencies to not hit a wall
   getWallCollisionMask(gameState: GameState): Mask {
-    let mask: Mask = {
-      up: 0,
-      down: 0,
-      left: 0,
-      right: 0
-    }
-    const boardWidth = gameState.board.width
-    const boardHeight = gameState.board.height
-    const myHead = gameState.you.head
 
+    const wallHitDirs = wallHitDirections(gameState, gameState.you)
 
-    if (myHead.x + 1 >= boardWidth) {
-      mask.right = -1 * Infinity
-    }
-    if (myHead.x - 1 < 0) {
-      mask.left = -1 * Infinity
-    }
-    if (myHead.y + 1 >= boardHeight) {
-      mask.up = -1 * Infinity
-    }
-    if (myHead.y - 1 < 0) {
-      mask.down = -1 * Infinity
+    return {
+      up: wallHitDirs.up ? -1 * Infinity : 0,
+      down: wallHitDirs.down ? -1 * Infinity : 0,
+      left: wallHitDirs.left ? -1 * Infinity : 0,
+      right: wallHitDirs.right ? -1 * Infinity : 0,
     }
 
-    return mask
+  }
+
+  getMiniMaxBestMoveMask(gameState: GameState): Mask {
+    const position: Position = generatePositions(gameState, 2, 0, "donno")
+
+    const direction: Direction = miniMax(position, 5, -1 * Infinity, Infinity, 0, gameState.board.snakes.length)[1]
+
+    console.log(position)
+
+
+    return {
+      up: direction == "up" ? this.miniMaxWeight : 0,
+      down: direction == "down" ? this.miniMaxWeight : 0,
+      left: direction == "left" ? this.miniMaxWeight : 0,
+      right: direction == "right" ? this.miniMaxWeight : 0
+    }
 
   }
 
 
   move(gameState: GameState) {
     clearGrid(this.grid)
+
+
+
+    //make me first in snake list
+    const me: Battlesnake = gameState.you
+    gameState.board.snakes.sort((snakeA: Battlesnake, snakeB: Battlesnake) => {
+      return snakeA.id == me.id ? -1 : snakeB.id == me.id ? 1 : 0;
+    })
+    //ignore my tail
+    if (me.health != 100) {
+      gameState.you.body.pop()
+      gameState.board.snakes[0].body.pop()
+    }
 
 
     let possibleMoveTendencies: PossibleMoveTendencies = {
@@ -343,8 +343,33 @@ export class Heuristic {
       right: 0
     }
 
-    let maskPipeline: Mask[] = [this.getSnakeCollisionMask(gameState), this.getSnakeAvailableSpaceMask(gameState), this.getWallCollisionMask(gameState), this.getFoodMask(gameState), this.getHeadOnMask(gameState)]
+    this.grid = populateGrid(this.grid, gameState)
 
+
+    let logger = undefined
+
+    // if (USE_LOGGER) {
+    //   logger = new MinimaxLogger(gameId, turnNumber);
+    //   logger.init();
+    // }
+
+
+
+    let maskPipeline: Mask[] = [
+      this.getSnakeCollisionMask(gameState),
+      this.getSnakeAvailableSpaceMask(gameState),
+      this.getWallCollisionMask(gameState),
+      this.getFoodMask(gameState),
+      this.getHeadOnMask(gameState),
+      this.getToCenterMask(gameState),
+      // this.getMiniMaxBestMoveMask(gameState),
+      // this.getRandomMask()
+    ]
+
+
+
+
+    // console.log(position)
 
     console.log(maskPipeline)
 

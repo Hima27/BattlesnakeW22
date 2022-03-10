@@ -1,6 +1,6 @@
 import { HEIGHT, WIDTH } from "./constants";
 import { GridCell } from "./gridCell";
-import { Battlesnake, Coord } from "./types";
+import { Battlesnake, Coord, GameState } from "./types";
 
 
 
@@ -119,9 +119,6 @@ function availableSpaceHelper(grid: FloodFillCell[][], start: Coord): number {
   return 0
 
 
-
-
-
 }
 
 export function availableSpace(grid: FloodFillCell[][], start: Coord): number {
@@ -131,6 +128,118 @@ export function availableSpace(grid: FloodFillCell[][], start: Coord): number {
 
   return availableSpaceHelper(gridCopy, start)
 
+}
 
 
+export function wallHitDirections(gameState: GameState, snake: Battlesnake): any {
+  let wallHitDirections = {
+    up: false,
+    down: false,
+    left: false,
+    right: false
+  }
+  const boardWidth = gameState.board.width
+  const boardHeight = gameState.board.height
+  const head = snake.head
+
+
+  if (head.x + 1 >= boardWidth) {
+    wallHitDirections.right = true
+  }
+  if (head.x - 1 < 0) {
+    wallHitDirections.left = true
+  }
+  if (head.y + 1 >= boardHeight) {
+    wallHitDirections.up = true
+  }
+  if (head.y - 1 < 0) {
+    wallHitDirections.down = true
+  }
+
+  return wallHitDirections
+
+}
+
+export function createGrid() {
+  let grid: GridCell[][] = []
+  for (let y = 0; y < HEIGHT; y++) {
+    let gridRow: GridCell[] = []
+    for (let x = 0; x < WIDTH; x++) {
+      gridRow.push({
+        isSnake: false,
+        isOurself: false,
+        isFood: false,
+        isHead: false,
+        likelyMove: "",
+        x: x,
+        y: y
+      })
+    }
+    grid.push(gridRow)
+  }
+
+  return grid
+}
+
+export function populateGrid(grid: GridCell[][], gameState: GameState): GridCell[][] {
+
+  const myBody = gameState.you.body
+
+  const allSnakes: Battlesnake[] = gameState.board.snakes
+
+  for (const snake of allSnakes) {
+    const snakeBody: Coord[] = snake.body
+
+    grid[snake.head.y][snake.head.x].isHead = true
+
+    for (const bodyPart of snakeBody) {
+
+      grid[bodyPart.y][bodyPart.x].isSnake = true
+      grid[bodyPart.y][bodyPart.x].isOurself = false
+      grid[bodyPart.y][bodyPart.x].isFood = false
+    }
+  }
+
+  for (const myBodyPart of myBody) {
+    grid[myBodyPart.y][myBodyPart.x].isOurself = true
+  }
+
+  return grid
+}
+
+
+
+export function snakeHitDirections(gameState: GameState, snake: Battlesnake): any {
+  let snakeHitDirections = {
+    up: false,
+    down: false,
+    left: false,
+    right: false
+  }
+
+  // Step 0: Don't hit snakes
+  const myHead = snake.head
+
+  const allSnakes: Battlesnake[] = gameState.board.snakes
+
+
+
+  for (const snake of allSnakes) {
+    const snakeBody: Coord[] = snake.body
+
+    for (const bodyPart of snakeBody) {
+      if (bodyPart.x == myHead.x - 1 && bodyPart.y == myHead.y) {
+        snakeHitDirections.left = true
+      } else if (bodyPart.x == myHead.x + 1 && bodyPart.y == myHead.y) {
+        snakeHitDirections.right = true
+      } else if (bodyPart.y == myHead.y - 1 && bodyPart.x == myHead.x) {
+        snakeHitDirections.down = true
+      } else if (bodyPart.y == myHead.y + 1 && bodyPart.x == myHead.x) {
+        snakeHitDirections.up = true
+      }
+    }
+  }
+
+
+  return snakeHitDirections
 }

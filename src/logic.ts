@@ -4,7 +4,7 @@ import { HEIGHT, WIDTH } from "./constants"
 
 
 
-const heuristic = new Heuristic(WIDTH, HEIGHT)
+const heuristic = new Heuristic()
 
 export function info(): InfoResponse {
   console.log("INFO")
@@ -12,8 +12,8 @@ export function info(): InfoResponse {
     apiversion: "1",
     author: "",
     color: "#ad0000",
-    head: "gamer",
-    tail: "coffee"
+    head: "replit-mark",
+    tail: "replit-notmark"
   }
   return response
 }
